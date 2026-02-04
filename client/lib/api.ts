@@ -154,18 +154,29 @@ class ApiService {
     type: 'Dog' | 'Cat';
     age: number;
     location: string;
-    image_url: string;
+    image: File;
     vaccinated: boolean;
     neutered: boolean;
     medical_notes?: string;
   }): Promise<Pet> {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('type', data.type);
+    formData.append('age', data.age.toString());
+    formData.append('location', data.location);
+    formData.append('image', data.image);
+    formData.append('vaccinated', data.vaccinated.toString());
+    formData.append('neutered', data.neutered.toString());
+    if (data.medical_notes) {
+      formData.append('medical_notes', data.medical_notes);
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/pets`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         ...this.getAuthHeader(),
       },
-      body: JSON.stringify(data),
+      body: formData,
     });
 
     if (!response.ok) {

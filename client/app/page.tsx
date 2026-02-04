@@ -7,6 +7,7 @@ import PetCard from '@/components/pet-card';
 import EmptyState from '@/components/empty-state';
 import { ArrowRight } from 'lucide-react';
 import { api, Pet } from '@/lib/api';
+import Link from 'next/link';
 
 export default function Home() {
   const [filters, setFilters] = useState<FilterState>({
@@ -16,6 +17,15 @@ export default function Home() {
   });
   const [allPets, setAllPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   // Fetch pets from API
   useEffect(() => {
@@ -87,7 +97,15 @@ export default function Home() {
                   Browse Pets
                   <ArrowRight className="w-4 h-4" />
                 </a>
-                
+                {user?.user_type === 'NGO' && (
+                  <Link
+                    href="/ngo/add-pet"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+                  >
+                    Add New Pet
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                )}
               </div>
             </div>
           </div>
