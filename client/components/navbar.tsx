@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Play as Paw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function Navbar() {
   return (
@@ -23,6 +24,19 @@ export default function Navbar() {
               Home
             </Link>
             
+            {/* Auth Buttons */}
+            <div className="flex items-center gap-4">
+              <Link href="/auth">
+                <Button variant="outline" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/auth">
+                <Button size="sm">
+                  Sign Up
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
