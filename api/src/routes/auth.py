@@ -69,7 +69,7 @@ async def signup(request: SignupRequest):
     token = create_session(user_id)
     
     # Determine redirect URL based on user type
-    redirect_url = "/ngo/dashboard" if request.user_type == "NGO" else "/"
+    redirect_url = "/ngo" if request.user_type == "NGO" else "/"
     
     return AuthResponse(
         token=token,
@@ -102,7 +102,7 @@ async def login(request: LoginRequest):
     token = create_session(user_id)
     
     # Determine redirect URL based on user type
-    redirect_url = "/ngo/dashboard" if user["user_type"] == "NGO" else "/"
+    redirect_url = "/ngo" if user["user_type"] == "NGO" else "/"
     
     return AuthResponse(
         token=token,
