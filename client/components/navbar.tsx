@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Play as Paw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +28,27 @@ export default function Navbar() {
     router.push('/');
   };
 
+  const handleHomeClick = () => {
+    // Determine home page based on current route context
+    const isNgoContext = pathname.startsWith('/ngo');
+    const homeHref = isNgoContext ? '/ngo' : '/';
+
+    // Check if already on home page
+    const isAlreadyHome = isNgoContext ? pathname === '/ngo' : pathname === '/';
+
+    if (isAlreadyHome) {
+      // Smoothly scroll to top if already on home page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Navigate to correct home page
+      router.push(homeHref);
+      // Scroll to top after navigation
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }, 0);
+    }
+  };
+
   return (
     <nav className="sticky top-0 z-40 bg-background border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -39,12 +61,12 @@ export default function Navbar() {
 
           {/* Navigation Links */}
           <div className="flex items-center gap-8">
-            <Link
-              href="/"
-              className="text-foreground hover:text-primary transition-colors text-sm font-medium"
+            <button
+              onClick={handleHomeClick}
+              className="text-foreground hover:text-primary transition-colors text-sm font-medium cursor-pointer"
             >
               Home
-            </Link>
+            </button>
             
             {/* Auth Buttons */}
             {loading ? null : user ? (
