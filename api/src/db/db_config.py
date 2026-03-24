@@ -38,6 +38,13 @@ def init_db():
     
     # Create indexes for pets collection
     db.pets.create_index("ngo_user_id")
+
+    # Create indexes for adoption requests collection
+    db.adoption_requests.create_index("ngo_user_id")
+    db.adoption_requests.create_index("pet_id")
+    db.adoption_requests.create_index("adopter_user_id")
+    db.adoption_requests.create_index("status")
+    db.adoption_requests.create_index("created_at")
     
     print("✓ Database indexes initialized successfully!")
 

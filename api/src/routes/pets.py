@@ -4,7 +4,7 @@ from datetime import datetime
 from bson import ObjectId
 
 from ..db.db_config import get_database
-from ..db.models import PetRequest, PetResponse
+from ..db.models import PetResponse, AdoptionRequestCreate
 from .auth import get_current_user
 from ..utils.cloudinary_upload import upload_image_to_cloudinary
 
@@ -47,6 +47,9 @@ async def create_pet(
         "vaccinated": vaccinated,
         "neutered": neutered,
         "medical_notes": medical_notes,
+        "is_adopted": False,
+        "adopted_at": None,
+        "adopted_request_id": None,
         "created_at": datetime.utcnow()
     }
     
@@ -77,7 +80,7 @@ async def get_pets(
     db = get_database()
     
     # Build query filter
-    query = {}
+    query = {"is_adopted": {"$ne": True}}
     if type:
         query["type"] = type
     if location:
@@ -125,3 +128,65 @@ async def get_pet_details(pet_id: str):
         pet["ngo_email"] = ngo.get("email", "")
     
     return pet
+
+
+@router.post("/{pet_id}/adoption-request")
+async def create_adoption_request(
+    pet_id: str,
+    request: AdoptionRequestCreate,
+    current_user=Depends(get_current_user)
+):
+    """Create an adoption request for a pet (Adopter only)."""
+    if current_user["user_type"] != "Adopter":
+        raise HTTPException(status_code=403, detail="Only adopters can submit adoption requests")
+
+    db = get_database()
+
+    try:
+        pet_object_id = ObjectId(pet_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid pet ID")
+
+    pet = db.pets.find_one({"_id": pet_object_id})
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+
+    if pet.get("is_adopted") is True:
+        raise HTTPException(status_code=409, detail="This pet has already been adopted")
+
+    if pet.get("ngo_user_id") == current_user["id"]:
+        raise HTTPException(status_code=400, detail="You cannot request adoption for your own pet")
+
+    existing_request = db.adoption_requests.find_one({
+        "pet_id": pet_id,
+        "adopter_user_id": current_user["id"],
+        "status": {"$in": ["Pending", "Approved"]}
+    })
+    if existing_request:
+        raise HTTPException(
+            status_code=409,
+            detail="You already have an active adoption request for this pet"
+        )
+
+    request_doc = {
+        "pet_id": pet_id,
+        "pet_name": pet.get("name", ""),
+        "ngo_user_id": pet.get("ngo_user_id"),
+        "adopter_user_id": current_user["id"],
+        "adopter_name": request.adopter_name,
+        "adopter_email": request.adopter_email,
+        "adopter_phone": request.adopter_phone,
+        "adopter_city": request.adopter_city,
+        "message": request.message,
+        "status": "Pending",
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+
+    result = db.adoption_requests.insert_one(request_doc)
+
+    return {
+        "id": str(result.inserted_id),
+        "message": "Adoption request submitted successfully",
+        "status": "Pending"
+    }

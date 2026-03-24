@@ -47,3 +47,15 @@ class PetResponse(BaseModel):
     neutered: bool
     medical_notes: Optional[str]
     created_at: str
+
+
+class AdoptionRequestCreate(BaseModel):
+    adopter_name: str
+    adopter_email: EmailStr
+    adopter_phone: str
+    adopter_city: str
+    message: Optional[str] = None
+
+
+class AdoptionRequestStatusUpdate(BaseModel):
+    status: Literal['Approved', 'Rejected']

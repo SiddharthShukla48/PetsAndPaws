@@ -44,6 +44,38 @@ interface PetsResponse {
   limit: number;
 }
 
+interface AdoptionRequest {
+  _id: string;
+  pet_id: string;
+  pet_name: string;
+  adopter_name: string;
+  adopter_email: string;
+  adopter_phone: string;
+  adopter_city: string;
+  message?: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  requestDate: string;
+}
+
+interface NgoDashboardResponse {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    user_type: string;
+  };
+  stats: {
+    total_pets: number;
+    active_pets: number;
+    adoption_requests: number;
+    approved_adoptions: number;
+    pending_requests: number;
+  };
+  pets: Array<Pet & { status?: 'Available' | 'Pending' | 'Adopted' }>;
+  adoption_requests: AdoptionRequest[];
+  message: string;
+}
+
 class ApiService {
   private getAuthHeader(): { Authorization: string } | {} {
     const token = localStorage.getItem('auth_token');
@@ -187,7 +219,34 @@ class ApiService {
     return response.json();
   }
 
-  async getNgoDashboard() {
+  async createAdoptionRequest(
+    petId: string,
+    data: {
+      adopter_name: string;
+      adopter_email: string;
+      adopter_phone: string;
+      adopter_city: string;
+      message?: string;
+    }
+  ) {
+    const response = await fetch(`${API_BASE_URL}/api/pets/${petId}/adoption-request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to submit adoption request');
+    }
+
+    return response.json();
+  }
+
+  async getNgoDashboard(): Promise<NgoDashboardResponse> {
     const response = await fetch(`${API_BASE_URL}/api/ngo/dashboard`, {
       headers: {
         ...this.getAuthHeader(),
@@ -201,7 +260,28 @@ class ApiService {
 
     return response.json();
   }
+
+  async updateAdoptionRequestStatus(
+    requestId: string,
+    status: 'Approved' | 'Rejected'
+  ) {
+    const response = await fetch(`${API_BASE_URL}/api/ngo/adoption-requests/${requestId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to update request status');
+    }
+
+    return response.json();
+  }
 }
 
 export const api = new ApiService();
-export type { Pet, AuthResponse, PetsResponse };
+export type { Pet, AuthResponse, PetsResponse, AdoptionRequest, NgoDashboardResponse };
