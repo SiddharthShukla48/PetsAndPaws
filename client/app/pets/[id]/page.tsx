@@ -17,6 +17,18 @@ export default function PetDetailsPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [id, setId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; user_type: string } | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    adopter_name: '',
+    adopter_email: '',
+    adopter_phone: '',
+    adopter_city: '',
+    message: '',
+  });
 
   useEffect(() => {
     params.then((p) => setId(p.id));
@@ -39,6 +51,52 @@ export default function PetDetailsPage({ params }: PageProps) {
 
     fetchPet();
   }, [id]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      setFormData((prev) => ({
+        ...prev,
+        adopter_name: parsedUser?.name || '',
+        adopter_email: parsedUser?.email || '',
+      }));
+    }
+  }, []);
+
+  const handleFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.currentTarget;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmitRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pet) return;
+
+    setFormError(null);
+    setFormSuccess(null);
+    setFormLoading(true);
+
+    try {
+      await api.createAdoptionRequest(pet._id, {
+        adopter_name: formData.adopter_name,
+        adopter_email: formData.adopter_email,
+        adopter_phone: formData.adopter_phone,
+        adopter_city: formData.adopter_city,
+        message: formData.message || undefined,
+      });
+
+      setFormSuccess('Your adoption request has been submitted successfully.');
+      setShowForm(false);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Failed to submit request');
+    } finally {
+      setFormLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -179,9 +237,28 @@ export default function PetDetailsPage({ params }: PageProps) {
 
                 {/* CTA Buttons */}
                 <div className="flex gap-3 pt-6">
-                  <button className="flex-1 bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors">
-                    Contact NGO
-                  </button>
+                  {user?.user_type === 'Adopter' ? (
+                    <button
+                      onClick={() => setShowForm((prev) => !prev)}
+                      className="flex-1 bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                    >
+                      {showForm ? 'Hide Form' : 'Adopt This Pet'}
+                    </button>
+                  ) : user?.user_type === 'NGO' ? (
+                    <button
+                      disabled
+                      className="flex-1 bg-muted text-muted-foreground py-3 rounded-lg font-semibold cursor-not-allowed"
+                    >
+                      NGO accounts cannot submit requests
+                    </button>
+                  ) : (
+                    <Link
+                      href="/auth"
+                      className="flex-1 bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors text-center"
+                    >
+                      Sign In to Adopt
+                    </Link>
+                  )}
                   <Link
                     href="/"
                     className="flex-1 bg-secondary text-secondary-foreground py-3 rounded-lg font-semibold hover:bg-secondary/90 transition-colors text-center"
@@ -189,6 +266,81 @@ export default function PetDetailsPage({ params }: PageProps) {
                     Back to Listing
                   </Link>
                 </div>
+
+                {formSuccess && (
+                  <div className="bg-green-100 text-green-800 rounded-lg px-4 py-3 text-sm font-medium">
+                    {formSuccess}
+                  </div>
+                )}
+
+                {formError && (
+                  <div className="bg-red-100 text-red-700 rounded-lg px-4 py-3 text-sm font-medium">
+                    {formError}
+                  </div>
+                )}
+
+                {showForm && user?.user_type === 'Adopter' && (
+                  <form onSubmit={handleSubmitRequest} className="border-t border-border pt-6 space-y-4">
+                    <h3 className="text-lg font-semibold text-foreground">Adoption Request Form</h3>
+
+                    <input
+                      type="text"
+                      name="adopter_name"
+                      value={formData.adopter_name}
+                      onChange={handleFormChange}
+                      placeholder="Your full name"
+                      className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
+                      required
+                    />
+
+                    <input
+                      type="email"
+                      name="adopter_email"
+                      value={formData.adopter_email}
+                      onChange={handleFormChange}
+                      placeholder="Your email"
+                      className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
+                      required
+                    />
+
+                    <input
+                      type="tel"
+                      name="adopter_phone"
+                      value={formData.adopter_phone}
+                      onChange={handleFormChange}
+                      placeholder="Phone number"
+                      className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
+                      required
+                    />
+
+                    <input
+                      type="text"
+                      name="adopter_city"
+                      value={formData.adopter_city}
+                      onChange={handleFormChange}
+                      placeholder="Your city"
+                      className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
+                      required
+                    />
+
+                    <textarea
+                      name="message"
+                      value={formData.message}
+                      onChange={handleFormChange}
+                      placeholder="Why do you want to adopt this pet?"
+                      rows={4}
+                      className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={formLoading}
+                      className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {formLoading ? 'Submitting...' : 'Submit Adoption Request'}
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           </div>

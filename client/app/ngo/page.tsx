@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/navbar';
 import { Card } from '@/components/ui/card';
@@ -8,75 +8,7 @@ import { Button } from '@/components/ui/button';
 import Badge from '@/components/badge';
 import { ArrowRight, Plus, MapPin, Calendar, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
-
-// Dummy data for NGO's pet listings
-const dummyPets = [
-  {
-    id: '1',
-    name: 'Max',
-    type: 'Dog',
-    age: 3,
-    location: 'Mumbai',
-    image: '/placeholder.svg',
-    vaccinated: true,
-    status: 'Available',
-  },
-  {
-    id: '2',
-    name: 'Luna',
-    type: 'Cat',
-    age: 2,
-    location: 'Mumbai',
-    image: '/placeholder.svg',
-    vaccinated: true,
-    status: 'Available',
-  },
-  {
-    id: '3',
-    name: 'Charlie',
-    type: 'Dog',
-    age: 5,
-    location: 'Mumbai',
-    image: '/placeholder.svg',
-    vaccinated: false,
-    status: 'Pending',
-  },
-  {
-    id: '4',
-    name: 'Whiskers',
-    type: 'Cat',
-    age: 1,
-    location: 'Mumbai',
-    image: '/placeholder.svg',
-    vaccinated: true,
-    status: 'Available',
-  },
-];
-
-// Dummy data for adoption requests
-const dummyAdoptionRequests = [
-  {
-    id: '1',
-    petName: 'Max',
-    adopterName: 'John Doe',
-    status: 'Pending',
-    requestDate: '2024-02-08',
-  },
-  {
-    id: '2',
-    petName: 'Luna',
-    adopterName: 'Jane Smith',
-    status: 'Approved',
-    requestDate: '2024-02-07',
-  },
-  {
-    id: '3',
-    petName: 'Charlie',
-    adopterName: 'Mike Johnson',
-    status: 'Pending',
-    requestDate: '2024-02-06',
-  },
-];
+import { api, AdoptionRequest, Pet } from '@/lib/api';
 
 interface PetStatus {
   Available: string;
@@ -90,20 +22,53 @@ const statusColors: PetStatus = {
   Adopted: 'bg-blue-100 text-blue-800',
 };
 
-const statusBadgeVariants: { [key: string]: 'type' | 'health' } = {
-  Available: 'type',
-  Pending: 'health',
-  Adopted: 'type',
-};
-
 export default function NgoPage() {
-  const [pets] = useState(dummyPets);
-  const [adoptionRequests] = useState(dummyAdoptionRequests);
+  const [pets, setPets] = useState<Array<Pet & { status?: 'Available' | 'Pending' | 'Adopted' }>>([]);
+  const [adoptionRequests, setAdoptionRequests] = useState<AdoptionRequest[]>([]);
+  const [stats, setStats] = useState({
+    total_pets: 0,
+    adoption_requests: 0,
+    approved_adoptions: 0,
+    pending_requests: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const totalPets = pets.length;
-  const adoptionRequestsCount = adoptionRequests.length;
-  const approvedAdoptions = adoptionRequests.filter((r) => r.status === 'Approved').length;
-  const pendingRequests = adoptionRequests.filter((r) => r.status === 'Pending').length;
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true);
+      const dashboard = await api.getNgoDashboard();
+      setPets(dashboard.pets || []);
+      setAdoptionRequests(dashboard.adoption_requests || []);
+      setStats({
+        total_pets: dashboard.stats.total_pets,
+        adoption_requests: dashboard.stats.adoption_requests,
+        approved_adoptions: dashboard.stats.approved_adoptions,
+        pending_requests: dashboard.stats.pending_requests,
+      });
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
+
+  const handleUpdateRequest = async (
+    requestId: string,
+    status: 'Approved' | 'Rejected'
+  ) => {
+    try {
+      await api.updateAdoptionRequestStatus(requestId, status);
+      await fetchDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update request status');
+    }
+  };
 
   return (
     <>
@@ -138,7 +103,7 @@ export default function NgoPage() {
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 mb-4">
                 <Calendar className="w-6 h-6 text-primary" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{totalPets}</p>
+              <p className="text-3xl font-bold text-foreground mb-1">{stats.total_pets}</p>
               <p className="text-muted-foreground text-sm">Total Pets Listed</p>
             </Card>
 
@@ -147,7 +112,7 @@ export default function NgoPage() {
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-accent/10 mb-4">
                 <AlertCircle className="w-6 h-6 text-accent" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{adoptionRequestsCount}</p>
+              <p className="text-3xl font-bold text-foreground mb-1">{stats.adoption_requests}</p>
               <p className="text-muted-foreground text-sm">Adoption Requests</p>
             </Card>
 
@@ -156,7 +121,7 @@ export default function NgoPage() {
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 mb-4">
                 <CheckCircle className="w-6 h-6 text-green-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{approvedAdoptions}</p>
+              <p className="text-3xl font-bold text-foreground mb-1">{stats.approved_adoptions}</p>
               <p className="text-muted-foreground text-sm">Approved Adoptions</p>
             </Card>
 
@@ -165,10 +130,22 @@ export default function NgoPage() {
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-yellow-100 mb-4">
                 <Clock className="w-6 h-6 text-yellow-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{pendingRequests}</p>
+              <p className="text-3xl font-bold text-foreground mb-1">{stats.pending_requests}</p>
               <p className="text-muted-foreground text-sm">Pending Requests</p>
             </Card>
           </div>
+
+          {error && (
+            <div className="mb-8 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
+          {loading && (
+            <div className="mb-8 rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+              Loading dashboard...
+            </div>
+          )}
         </section>
 
         {/* My Pet Listings Section */}
@@ -184,13 +161,13 @@ export default function NgoPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {pets.map((pet) => (
                 <div
-                  key={pet.id}
+                  key={pet._id}
                   className="bg-card rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-200 h-full flex flex-col"
                 >
                   {/* Image */}
                   <div className="relative w-full h-48 bg-muted overflow-hidden">
                     <Image
-                      src={pet.image}
+                      src={pet.image_url || '/placeholder.svg'}
                       alt={pet.name}
                       fill
                       className="object-cover"
@@ -227,19 +204,15 @@ export default function NgoPage() {
                     <div className="pt-2">
                       <span
                         className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          statusColors[pet.status as keyof typeof statusColors]
+                          statusColors[(pet.status || 'Available') as keyof typeof statusColors]
                         }`}
                       >
-                        {pet.status}
+                        {pet.status || 'Available'}
                       </span>
                     </div>
 
                     {/* Action Button */}
-                    <div className="pt-2 mt-auto">
-                      <button className="w-full bg-primary text-primary-foreground py-2 rounded-md font-medium text-sm hover:bg-primary/90 transition-colors">
-                        Manage
-                      </button>
-                    </div>
+                    <div className="pt-2 mt-auto"></div>
                   </div>
                 </div>
               ))}
@@ -282,7 +255,16 @@ export default function NgoPage() {
                         Pet Name
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
-                        Adopter Name
+                        Adopter Details
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                        Contact
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                        City
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                        Message
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
                         Request Date
@@ -298,16 +280,28 @@ export default function NgoPage() {
                   <tbody>
                     {adoptionRequests.map((request, index) => (
                       <tr
-                        key={request.id}
+                        key={request._id}
                         className={`border-b border-border hover:bg-muted/30 transition-colors ${
                           index === adoptionRequests.length - 1 ? 'border-b-0' : ''
                         }`}
                       >
                         <td className="px-6 py-4 text-sm font-medium text-foreground">
-                          {request.petName}
+                          {request.pet_name}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <div className="font-medium text-foreground">{request.adopter_name}</div>
+                          <div className="text-xs text-muted-foreground">{request.adopter_email}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">
-                          {request.adopterName}
+                          {request.adopter_phone}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
+                          {request.adopter_city}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs">
+                          <p className="line-clamp-3 break-words">
+                            {request.message?.trim() ? request.message : 'No message provided'}
+                          </p>
                         </td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">
                           {new Date(request.requestDate).toLocaleDateString()}
@@ -317,6 +311,8 @@ export default function NgoPage() {
                             className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                               request.status === 'Approved'
                                 ? 'bg-green-100 text-green-800'
+                                : request.status === 'Rejected'
+                                ? 'bg-red-100 text-red-800'
                                 : 'bg-yellow-100 text-yellow-800'
                             }`}
                           >
@@ -325,14 +321,32 @@ export default function NgoPage() {
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <div className="flex gap-2">
-                            {request.status !== 'Approved' && (
-                              <button className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 transition-colors font-medium">
+                            {request.status === 'Pending' && (
+                              <button
+                                onClick={() => handleUpdateRequest(request._id, 'Approved')}
+                                className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 transition-colors font-medium"
+                              >
                                 Approve
                               </button>
                             )}
-                            <button className="px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700 transition-colors font-medium">
-                              Reject
-                            </button>
+                            {request.status === 'Pending' && (
+                              <button
+                                onClick={() => handleUpdateRequest(request._id, 'Rejected')}
+                                className="px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700 transition-colors font-medium"
+                              >
+                                Reject
+                              </button>
+                            )}
+                            {request.status === 'Approved' && (
+                              <button className="px-3 py-1 bg-gray-400 text-white text-xs rounded-md font-medium cursor-not-allowed" disabled>
+                                Reject
+                              </button>
+                            )}
+                            {request.status === 'Rejected' && (
+                              <button className="px-3 py-1 bg-gray-400 text-white text-xs rounded-md font-medium cursor-not-allowed" disabled>
+                                Reject
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
