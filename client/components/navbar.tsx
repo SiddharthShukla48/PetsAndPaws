@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Play as Paw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 
 export default function Navbar() {
@@ -12,6 +13,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [helpDropdownOpen, setHelpDropdownOpen] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
@@ -21,6 +23,18 @@ export default function Navbar() {
     }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event: MouseEvent) => {
+      if (helpDropdownOpen && !(event.target as Element).closest('.help-dropdown')) {
+        setHelpDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [helpDropdownOpen]);
 
   const handleLogout = async () => {
     await api.logout();
@@ -67,6 +81,54 @@ export default function Navbar() {
             >
               Home
             </button>
+            
+            {user && (
+              <Link
+                href="/my-requests"
+                className={`text-sm font-medium transition-colors cursor-pointer ${
+                  pathname === '/my-requests'
+                    ? 'text-primary'
+                    : 'text-foreground hover:text-primary'
+                }`}
+              >
+                My Requests
+              </Link>
+            )}
+
+            {/* Help Dropdown */}
+            <div className="relative help-dropdown">
+              <button
+                onClick={() => setHelpDropdownOpen(!helpDropdownOpen)}
+                className="flex items-center gap-1 text-foreground hover:text-primary transition-colors text-sm font-medium cursor-pointer"
+              >
+                <HelpCircle className="h-4 w-4" />
+                Help
+                <ChevronDown className="h-3 w-3" />
+              </button>
+
+              {helpDropdownOpen && (
+                <div className="absolute top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <Link
+                    href="/guide"
+                    onClick={() => setHelpDropdownOpen(false)}
+                    className={`block px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                      pathname === '/guide' ? 'text-primary bg-blue-50' : 'text-gray-700'
+                    }`}
+                  >
+                    Adoption Guide
+                  </Link>
+                  <Link
+                    href="/faq"
+                    onClick={() => setHelpDropdownOpen(false)}
+                    className={`block px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                      pathname === '/faq' ? 'text-primary bg-blue-50' : 'text-gray-700'
+                    }`}
+                  >
+                    FAQ
+                  </Link>
+                </div>
+              )}
+            </div>
             
             {/* Auth Buttons */}
             {loading ? null : user ? (

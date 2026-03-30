@@ -40,7 +40,7 @@ export default function PetDetailsPage({ params }: PageProps) {
     async function fetchPet() {
       try {
         setLoading(true);
-        const petData = await api.getPetById(id);
+        const petData = await api.getPetById(id!);
         setPet(petData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load pet');

@@ -2,9 +2,10 @@ import React from "react"
 interface BadgeProps {
   variant?: 'type' | 'health' | 'default';
   children: React.ReactNode;
+  className?: string;
 }
 
-export default function Badge({ variant = 'default', children }: BadgeProps) {
+export default function Badge({ variant = 'default', children, className }: BadgeProps) {
   const baseClasses = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors';
 
   const variants = {
@@ -14,7 +15,7 @@ export default function Badge({ variant = 'default', children }: BadgeProps) {
   };
 
   return (
-    <span className={`${baseClasses} ${variants[variant]}`}>
+    <span className={`${baseClasses} ${variants[variant]} ${className || ''}`}>
       {children}
     </span>
   );

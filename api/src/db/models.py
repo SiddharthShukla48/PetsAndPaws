@@ -59,3 +59,13 @@ class AdoptionRequestCreate(BaseModel):
 
 class AdoptionRequestStatusUpdate(BaseModel):
     status: Literal['Approved', 'Rejected']
+
+# FAQ Models
+class FAQCreate(BaseModel):
+    question: str
+    answer: str
+
+class FAQResponse(BaseModel):
+    id: str
+    question: str
+    answer: str
