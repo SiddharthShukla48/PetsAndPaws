@@ -59,14 +59,14 @@ export default function Navbar() {
                 {pathname === '/ngo' ? (
                   <Link
                     href="/"
-                    className="text-sm font-medium transition-colors cursor-pointer text-foreground hover:text-primary"
+                    className="text-base font-medium transition-colors cursor-pointer text-foreground hover:text-primary"
                   >
                     Listing
                   </Link>
                 ) : (
                   <Link
                     href="/ngo"
-                    className="text-sm font-medium transition-colors cursor-pointer text-foreground hover:text-primary"
+                    className="text-base font-medium transition-colors cursor-pointer text-foreground hover:text-primary"
                   >
                     Dashboard
                   </Link>
@@ -79,14 +79,14 @@ export default function Navbar() {
                 {pathname === '/my-requests' || pathname === '/guide' || pathname === '/faq' || pathname === '/care-guide' ? (
                   <Link
                     href="/"
-                    className="text-sm font-medium transition-colors cursor-pointer text-foreground hover:text-primary"
+                    className="text-base font-medium transition-colors cursor-pointer text-foreground hover:text-primary"
                   >
                     Listing
                   </Link>
                 ) : (
                   <Link
                     href="/my-requests"
-                    className="text-sm font-medium transition-colors cursor-pointer text-foreground hover:text-primary"
+                    className="text-base font-medium transition-colors cursor-pointer text-foreground hover:text-primary"
                   >
                     My Requests
                   </Link>
@@ -99,7 +99,7 @@ export default function Navbar() {
               <div className="relative help-dropdown">
                 <button
                   onClick={() => setHelpDropdownOpen(!helpDropdownOpen)}
-                  className="flex items-center gap-1 text-foreground hover:text-primary transition-colors text-sm font-medium cursor-pointer"
+                  className="flex items-center gap-1 text-foreground hover:text-primary transition-colors text-base font-medium cursor-pointer"
                 >
                   <HelpCircle className="h-4 w-4" />
                   Help
@@ -111,7 +111,7 @@ export default function Navbar() {
                     <Link
                       href="/guide"
                       onClick={() => setHelpDropdownOpen(false)}
-                      className={`block px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                      className={`block px-4 py-2 text-base hover:bg-gray-50 transition-colors ${
                         pathname === '/guide' ? 'text-primary bg-blue-50' : 'text-gray-700'
                       }`}
                     >
@@ -120,7 +120,7 @@ export default function Navbar() {
                     <Link
                       href="/faq"
                       onClick={() => setHelpDropdownOpen(false)}
-                      className={`block px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                      className={`block px-4 py-2 text-base hover:bg-gray-50 transition-colors ${
                         pathname === '/faq' ? 'text-primary bg-blue-50' : 'text-gray-700'
                       }`}
                     >
@@ -129,7 +129,7 @@ export default function Navbar() {
                     <Link
                       href="/care-guide"
                       onClick={() => setHelpDropdownOpen(false)}
-                      className={`block px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                      className={`block px-4 py-2 text-base hover:bg-gray-50 transition-colors ${
                         pathname === '/care-guide' ? 'text-primary bg-blue-50' : 'text-gray-700'
                       }`}
                     >
@@ -143,22 +143,22 @@ export default function Navbar() {
             {/* Auth Buttons */}
             {loading ? null : user ? (
               <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-base text-muted-foreground">
                   {user.name}
                 </span>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
+                <Button variant="outline" onClick={handleLogout}>
                   Logout
                 </Button>
               </div>
             ) : (
               <div className="flex items-center gap-4">
                 <Link href="/auth">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth">
-                  <Button size="sm">
+                  <Button>
                     Sign Up
                   </Button>
                 </Link>
